@@ -1,0 +1,220 @@
+# Author: Arthur Wayne
+# This is based off of the Volume Profile and it is the basis for the Triplex strategy
+# Inspired by the Volume Profile by TD Ameritrade IP Company, Inc. (c) 2011-2020
+
+input pricePerRowHeightMode = {default AUTOMATIC, TICKSIZE, CUSTOM};
+input customRowHeight = 1.0;
+input timePerProfile = {default DAY, MINUTE, HOUR, CHART, WEEK, MONTH, "OPT EXP", BAR};
+input multiplier = 1;
+input onExpansion = no;
+input profiles = 1000;
+input showPointOfControl = yes;
+input showValueArea = yes;
+input valueAreaPercent = 68;
+input opacity = 50;
+
+# For second VP
+input showValueArea2 = yes;
+input valueAreaPercent2 = 95;
+input opacity2 = 0;
+
+# For third VP
+input timePerProfile3 = {default WEEK, MINUTE, HOUR, DAY, CHART , MONTH, "OPT EXP", BAR};
+input showPointOfControl3 = no;
+input showValueArea3 = no;
+input valueAreaPercent3 = 68;
+input opacity3 = 25;
+
+# Variables used to define period given by input timePerProfile
+def period;
+def yyyymmdd = GetYYYYMMDD();
+def seconds = SecondsFromTime(0);
+def month = GetYear() * 12 + GetMonth();
+def day_number = DaysFromDate(First(yyyymmdd)) + GetDayOfWeek(First(yyyymmdd));
+def dom = GetDayOfMonth(yyyymmdd);
+def dow = GetDayOfWeek(yyyymmdd - dom + 1);
+def expthismonth = (if dow > 5 then 27 else 20) - dow;
+def exp_opt = month + (dom > expthismonth);
+switch (timePerProfile) {
+case CHART:
+    period = 0;
+case MINUTE:
+    period = Floor(seconds / 60 + day_number * 24 * 60);
+case HOUR:
+    period = Floor(seconds / 3600 + day_number * 24);
+case DAY:
+    period = CountTradingDays(Min(First(yyyymmdd), yyyymmdd), yyyymmdd) - 1;
+case WEEK:
+    period = Floor(day_number / 7);
+case MONTH:
+    period = Floor(month - First(month));
+case "OPT EXP":
+    period = exp_opt - First(exp_opt);
+case BAR:
+    period = BarNumber() - 1;
+}
+
+def count = CompoundValue(1, if period != period[1] then (count[1] + period - period[1]) % multiplier else count[1], 0);
+def cond = count < count[1] + period - period[1];
+def height;
+switch (pricePerRowHeightMode) {
+case AUTOMATIC:
+    height = PricePerRow.AUTOMATIC;
+case TICKSIZE:
+    height = PricePerRow.TICKSIZE;
+case CUSTOM:
+    height = customRowHeight;
+}
+
+# For VP 3
+def period3;
+switch (timePerProfile3) {
+case CHART:
+    period3 = 0;
+case MINUTE:
+    period3 = Floor(seconds / 60 + day_number * 24 * 60);
+case HOUR:
+    period3 = Floor(seconds / 3600 + day_number * 24);
+case DAY:
+    period3 = CountTradingDays(Min(First(yyyymmdd), yyyymmdd), yyyymmdd) - 1;
+case WEEK:
+    period3 = Floor(day_number / 7);
+case MONTH:
+    period3 = Floor(month - First(month));
+case "OPT EXP":
+    period3 = exp_opt - First(exp_opt);
+case BAR:
+    period3 = BarNumber() - 1;
+}
+
+def count3 = CompoundValue(1, if period3 != period3[1] then (count3[1] + period3 - period3[1]) % multiplier else count3[1], 0);
+def cond3 = count3 < count3[1] + period3 - period3[1];
+
+# universal values
+def con = CompoundValue(1, onExpansion, no);
+def plotsDomain = IsNaN(close) == onExpansion;
+
+# Define first VP
+profile vol1 = VolumeProfile("startNewProfile" = cond, "onExpansion" = onExpansion, "numberOfProfiles" = profiles, "pricePerRow" = height, "value area percent" = valueAreaPercent);
+def pc = if IsNaN(vol1.GetPointOfControl()) and con then pc[1] else vol1.GetPointOfControl();
+def hVA1 = if IsNaN(vol1.GetHighestValueArea()) and con then hVA1[1] else vol1.GetHighestValueArea();
+def lVA1 = if IsNaN(vol1.GetLowestValueArea()) and con then lVA1[1] else vol1.GetLowestValueArea();
+def hProfile = if IsNaN(vol1.GetHighest()) and con then hProfile[1] else vol1.GetHighest();
+def lProfile = if IsNaN(vol1.GetLowest()) and con then lProfile[1] else vol1.GetLowest();
+
+plot POC = if plotsDomain then pc else Double.NaN;
+plot ProfileHigh = if plotsDomain then hProfile else Double.NaN;
+plot ProfileLow = if plotsDomain then lProfile else Double.NaN;
+plot VAHigh1 = if plotsDomain then hVA1 else Double.NaN;
+plot VALow1 = if plotsDomain then lVA1 else Double.NaN;
+AddLabel(yes, "+1 SD: " + hVA1 + ", -1 SD: " + lVA1, GetColor(8));
+
+# Define second VP
+profile vol2 = VolumeProfile("startNewProfile" = cond, "onExpansion" = onExpansion, "numberOfProfiles" = profiles, "pricePerRow" = height, "value area percent" = valueAreaPercent2);
+def hVA2 = if IsNaN(vol2.GetHighestValueArea()) and con then hVA2[1] else vol2.GetHighestValueArea();
+def lVA2 = if IsNaN(vol2.GetLowestValueArea()) and con then lVA2[1] else vol2.GetLowestValueArea();
+
+plot VAHigh2 = if plotsDomain then hVA2 else Double.NaN;
+plot VALow2 = if plotsDomain then lVA2 else Double.NaN;
+AddLabel(yes, "+2 SD: " + hVA2 + ", -2 SD: " + lVA2, GetColor(8));
+
+def Range = VAHigh2 - VALow2;
+AddLabel(yes, "Range: " + Range, GetColor(8));
+
+# Alerts
+def above1SD = close > VAHigh1;
+def above2SD = close >= VAHigh2;
+def below1SD = close < VALow1;
+def below2SD = close <= VALow2;
+
+Alert (above1SD and !above2SD, "SPY " + close + " above +1 SD", Alert.BAR, Sound.Ding);
+Alert (below1SD and !below2SD, "SPY " + close + " below -1 SD", Alert.BAR, Sound.Ding);
+Alert (above2SD, "SPY " + close + " above +2 SD", Alert.BAR, Sound.Ring);
+Alert (below2SD, "SPY " + close + " below -2 SD", Alert.BAR, Sound.Ring);
+
+# Define third VP
+profile vol3 = VolumeProfile("startNewProfile" = cond3, "onExpansion" = onExpansion, "numberOfProfiles" = profiles, "pricePerRow" = height, "value area percent" = valueAreaPercent3);
+def pc3 = if IsNaN(vol3.GetPointOfControl()) and con then pc3[1] else vol3.GetPointOfControl();
+def hVA3 = if IsNaN(vol3.GetHighestValueArea()) and con then hVA3[1] else vol3.GetHighestValueArea();
+def lVA3 = if IsNaN(vol3.GetLowestValueArea()) and con then lVA3[1] else vol3.GetLowestValueArea();
+
+plot POC3 = if plotsDomain then pc3 else Double.NaN;
+plot VAHigh3 = if plotsDomain then hVA3 else Double.NaN;
+plot VALow3 = if plotsDomain then lVA3 else Double.NaN;
+
+# Styling
+DefineGlobalColor("Profile", GetColor(1));
+DefineGlobalColor("Point Of Control", GetColor(5));
+DefineGlobalColor("Value Area", GetColor(8));
+
+vol1.show(globalColor("Profile"), if showPointOfControl then globalColor("Point Of Control") else color.current, if showValueArea then globalColor("Value Area") else color.current, opacity);
+POC.SetDefaultColor(GlobalColor("Point Of Control"));
+POC.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+POC.SetDefaultColor(GetColor(4));
+POC3.SetDefaultColor(GetColor(0));
+VAHigh1.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+VALow1.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+VAHigh1.SetDefaultColor(GlobalColor("Value Area"));
+VALow1.SetDefaultColor(GlobalColor("Value Area"));
+VAHigh2.SetLineWeight(2);
+VALow2.SetLineWeight(2);
+VAHigh2.SetDefaultColor(GetColor(5));
+VALow2.SetDefaultColor(GetColor(5));
+VAHigh3.Hide();
+VALow3.Hide();
+ProfileHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+ProfileLow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+ProfileHigh.SetDefaultColor(GetColor(3));
+ProfileLow.SetDefaultColor(GetColor(3));
+ProfileHigh.Hide();
+ProfileLow.Hide();
+vol3.show(CreateColor(200,200,200), if showPointOfControl3 then Color.MAGENTA else color.current, if showValueArea3 then globalColor("Value Area") else color.current, opacity3);
+
+# VWAP
+# By TD Ameritrade IP Company, Inc. (c) 2011-2020
+
+input numDevDn = -2.0;
+input numDevUp = 2.0;
+input timeFrame = {default DAY, WEEK, MONTH};
+
+def cap = getAggregationPeriod();
+def errorInAggregation =
+    timeFrame == timeFrame.DAY and cap >= AggregationPeriod.WEEK or
+    timeFrame == timeFrame.WEEK and cap >= AggregationPeriod.MONTH;
+assert(!errorInAggregation, "timeFrame should be not less than current chart aggregation period");
+
+def yearmonthdate = getyyyymmdd();
+def periodIndx;
+switch (timeFrame) {
+case DAY:
+    periodIndx = yearmonthdate;
+case WEEK:
+    periodIndx = Floor((daysFromDate(first(yearmonthdate)) + getDayOfWeek(first(yearmonthdate))) / 7);
+case MONTH:
+    periodIndx = roundDown(yearmonthdate / 100, 0);
+}
+def isPeriodRolled = compoundValue(1, periodIndx != periodIndx[1], yes);
+
+def volumeSum;
+def volumeVwapSum;
+def volumeVwap2Sum;
+
+if (isPeriodRolled) {
+    volumeSum = volume;
+    volumeVwapSum = volume * vwap;
+    volumeVwap2Sum = volume * Sqr(vwap);
+} else {
+    volumeSum = compoundValue(1, volumeSum[1] + volume, volume);
+    volumeVwapSum = compoundValue(1, volumeVwapSum[1] + volume * vwap, volume * vwap);
+    volumeVwap2Sum = compoundValue(1, volumeVwap2Sum[1] + volume * Sqr(vwap), volume * Sqr(vwap));
+}
+def price = volumeVwapSum / volumeSum;
+def deviation = Sqrt(Max(volumeVwap2Sum / volumeSum - Sqr(price), 0));
+
+plot VWAP = price;
+plot UpperBand = price + numDevUp * deviation;
+plot LowerBand = price + numDevDn * deviation;
+
+VWAP.setDefaultColor(getColor(0));
+UpperBand.setDefaultColor(getColor(0));
+LowerBand.setDefaultColor(getColor(0));
