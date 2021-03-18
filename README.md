@@ -1,8 +1,13 @@
 # Triplex
-Automated statistical arbitrage options strategy
 
-Currently built using TD Ameritrade's proprietary ThinkScript language and custom excel Python functions that handle real-time-data from TD's ThinkOrSwim platform.
+## The SPY Triplex Strategy: A Fully-Automated Three-Factor Options Arbitrage Model
 
-Theoretical basis: https://gammaconvexity.com/triplex.html
+### Languages: Python, ThinkScript, SQL
+
+### Data Sourcing and Processing:
+
+### Execution: Robinhood API
+
+### Theoretical basis: https://gammaconvexity.com/triplex.html
 
 ![alt text](https://github.com/GammaConvexity/Triplex/blob/main/realTimeSample.gif?raw=true)
