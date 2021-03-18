@@ -1,5 +1,3 @@
-# Triplex
-
 ## The SPY Triplex Strategy: A Fully-Automated Three-Factor Options Arbitrage Model
 
 Languages: Python, ThinkScript, SQL
