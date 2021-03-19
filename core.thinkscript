@@ -1,6 +1,4 @@
 # Author: Arthur Wayne
-# This is based off of the Volume Profile and it is the basis for the Triplex strategy
-# Inspired by the Volume Profile by TD Ameritrade IP Company, Inc. (c) 2011-2020
 
 input pricePerRowHeightMode = {default AUTOMATIC, TICKSIZE, CUSTOM};
 input customRowHeight = 1.0;
@@ -121,17 +119,6 @@ AddLabel(yes, "+2 SD: " + hVA2 + ", -2 SD: " + lVA2, GetColor(8));
 def Range = VAHigh2 - VALow2;
 AddLabel(yes, "Range: " + Range, GetColor(8));
 
-# Alerts
-def above1SD = close > VAHigh1;
-def above2SD = close >= VAHigh2;
-def below1SD = close < VALow1;
-def below2SD = close <= VALow2;
-
-Alert (above1SD and !above2SD, "SPY " + close + " above +1 SD", Alert.BAR, Sound.Ding);
-Alert (below1SD and !below2SD, "SPY " + close + " below -1 SD", Alert.BAR, Sound.Ding);
-Alert (above2SD, "SPY " + close + " above +2 SD", Alert.BAR, Sound.Ring);
-Alert (below2SD, "SPY " + close + " below -2 SD", Alert.BAR, Sound.Ring);
-
 # Define third VP
 profile vol3 = VolumeProfile("startNewProfile" = cond3, "onExpansion" = onExpansion, "numberOfProfiles" = profiles, "pricePerRow" = height, "value area percent" = valueAreaPercent3);
 def pc3 = if IsNaN(vol3.GetPointOfControl()) and con then pc3[1] else vol3.GetPointOfControl();
@@ -171,7 +158,6 @@ ProfileLow.Hide();
 vol3.show(CreateColor(200,200,200), if showPointOfControl3 then Color.MAGENTA else color.current, if showValueArea3 then globalColor("Value Area") else color.current, opacity3);
 
 # VWAP
-# By TD Ameritrade IP Company, Inc. (c) 2011-2020
 
 input numDevDn = -2.0;
 input numDevUp = 2.0;
@@ -212,9 +198,31 @@ def price = volumeVwapSum / volumeSum;
 def deviation = Sqrt(Max(volumeVwap2Sum / volumeSum - Sqr(price), 0));
 
 plot VWAP = price;
-plot UpperBand = price + numDevUp * deviation;
-plot LowerBand = price + numDevDn * deviation;
+plot upVWAP1SD = price + deviation;
+plot downVWAP1SD = price - deviation;
+plot upVWAP2SD = price + numDevUp * deviation;
+plot downVWAP2SD = price + numDevDn * deviation;
 
 VWAP.setDefaultColor(getColor(0));
-UpperBand.setDefaultColor(getColor(0));
-LowerBand.setDefaultColor(getColor(0));
+upVWAP1SD.setDefaultColor(getColor(0));
+downVWAP1SD.setDefaultColor(getColor(0));
+upVWAP2SD.setDefaultColor(getColor(0));
+downVWAP2SD.setDefaultColor(getColor(0));
+upVWAP1SD.SetStyle(Curve.SHORT_DASH);
+downVWAP1SD.SetStyle(Curve.SHORT_DASH);
+
+# Alerts and orders
+def above1SD = close > VAHigh1 and close > upVWAP1SD;
+def above2SD = close >= VAHigh2 and close >= upVWAP2SD;
+def below1SD = close < VALow1 and close < downVWAP1SD;
+def below2SD = close <= VALow2 and close <= downVWAP2SD;
+
+Alert (above1SD and !above2SD, "SPY " + close + " above +1 SD", Alert.BAR, Sound.Ding);
+Alert (below1SD and !below2SD, "SPY " + close + " below -1 SD", Alert.BAR, Sound.Ding);
+Alert (above2SD, "SPY " + close + " above +2 SD", Alert.BAR, Sound.Ring);
+Alert (below2SD, "SPY " + close + " below -2 SD", Alert.BAR, Sound.Ring);
+def signal1SD = above1SD or below1SD;
+def signal2SD = above2SD or below2SD;
+AddLabel(yes, "1SD Status: " +  if signal2SD then "T" else "F", GetColor(8));
+AddLabel(yes, "1SD Status: " +  if signal1SD then "T" else "F", GetColor(8));
+AddChartBubble(signal2SD, close, close, color.plum, if above2SD then yes else no);    
