@@ -1,10 +1,10 @@
 ## The SPY Triplex Strategy: A Fully-Automated Three-Factor Options Arbitrage Model
 
-Languages: Python, ThinkScript, SQL
+Languages: Python, ThinkScript
 
-Data Sourcing and Processing:
+Data Sourcing and Processing: thinkorswim
 
-Execution: Robinhood API
+Execution: tastyworks API
 
 Theoretical basis: https://gammaconvexity.com/triplex.html
 
