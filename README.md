@@ -1,8 +1,8 @@
 ## The SPY Triplex Strategy: An Automated Three-Factor Statistical Arbitrage Model
 
-Languages: Python, ThinkScript
+Tools/Languages: Python, Excel, ThinkScript
 
-Packages: numpy, pandas, xlwings, pyautogui, PIL
+Python Packages: numpy, pandas, xlwings, pyautogui, PIL
 
 Data Sourcing and Processing: thinkorswim RTD server
 
