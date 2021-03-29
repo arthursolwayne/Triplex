@@ -1,4 +1,4 @@
-## The SPY Triplex Strategy: An Automated Three-Factor Statistical Arbitrage Model
+## The SPY Triplex Strategy: An Automated Statistical Arbitrage Model
 
 Tools/Languages: Python, Excel, ThinkScript
 
