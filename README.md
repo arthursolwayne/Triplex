@@ -1,4 +1,4 @@
-## The SPY Triplex Strategy: An Automated Statistical Arbitrage Model
+## Triplex: Capturing the Index-Option Liquidity Premia through Statistical Arbitrage
 
 Tools/Languages: Python, Excel, ThinkScript
 
