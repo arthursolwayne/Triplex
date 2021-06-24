@@ -1,4 +1,4 @@
-## Triplex: Capturing the Index Option Liquidity Premia through Statistical Arbitrage
+## Triplex: Capturing the Index Option Liquidity Premia through Three-Factor Statistical Model
 
 Tools/Languages: Python, Excel, ThinkScript
 
