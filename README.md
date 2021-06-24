@@ -1,6 +1,6 @@
 ## Triplex: Capturing the Index Option Liquidity Premia through Three-Factor Statistical Model
 
-</b>Tools/Languages:</b> Python, Excel, ThinkScript
+<b>Tools/Languages:</b> Python, Excel, ThinkScript
 
 <b>Python Packages:</b> numpy, pandas, xlwings, pyautogui, PIL
 
